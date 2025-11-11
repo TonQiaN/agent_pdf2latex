@@ -4,6 +4,8 @@ langchain-openai>=1.0.0
 langchain-anthropic>=1.0.0
 jupyter>=1.0.0
 langchain-google-genai
+pymupdf
+Pillow
 google-genai
 openai
 python-dotenv
