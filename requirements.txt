@@ -1,5 +1,12 @@
-langchain>=1.0.0,<2.0.0
-langchain-anthropic
-langchain-openai
+langchain>=1.0.0
+langgraph>=1.0.0
+langchain-openai>=1.0.0
+langchain-anthropic>=1.0.0
+jupyter>=1.0.0
+langchain-google-genai
+google-genai
 openai
 python-dotenv
+pypdf
+pymupdf
+truststore

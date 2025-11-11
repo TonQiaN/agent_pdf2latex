@@ -5,6 +5,7 @@ from langchain.chat_models import init_chat_model
 from langchain.tools import tool, ToolRuntime
 from langgraph.checkpoint.memory import InMemorySaver
 
+from pprint import pprint
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -38,7 +39,7 @@ def get_user_location(runtime: ToolRuntime[Context]) -> str:
 
 # Configure model (OpenAI)
 model = init_chat_model(
-    "chatgpt-5",
+    "gpt-4",
     model_provider="openai",
     temperature=0
 )
@@ -75,7 +76,7 @@ response = agent.invoke(
     context=Context(user_id="1")
 )
 
-print(response['structured_response'])
+pprint(response['structured_response'])
 # ResponseFormat(
 #     punny_response="Florida is still having a 'sun-derful' day! The sunshine is playing 'ray-dio' hits all day long! I'd say it's the perfect weather for some 'solar-bration'! If you were hoping for rain, I'm afraid that idea is all 'washed up' - the forecast remains 'clear-ly' brilliant!",
 #     weather_conditions="It's always sunny in Florida!"
@@ -89,7 +90,7 @@ response = agent.invoke(
     context=Context(user_id="1")
 )
 
-print(response['structured_response'])
+pprint(response['structured_response'])
 # ResponseFormat(
 #     punny_response="You're 'thund-erfully' welcome! It's always a 'breeze' to help you stay 'current' with the weather. I'm just 'cloud'-ing around waiting to 'shower' you with more forecasts whenever you need them. Have a 'sun-sational' day in the Florida sunshine!",
 #     weather_conditions=None
