@@ -3,6 +3,7 @@ Agent Configuration for PDF to LaTeX Workflow
 """
 
 from langchain_openai import ChatOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.agents import create_agent
 from langgraph.checkpoint.memory import InMemorySaver
 from langchain.messages import HumanMessage
@@ -13,6 +14,7 @@ from src.prompts.dynamic_prompts import build_dynamic_system_prompt
 from src.models.schemas import context_based_output
 
 def create_pdf_agent(
+    model_type: str = "openai",
     model: str = "gpt-4o",
     temperature: float = 0.0,
 ):
@@ -34,14 +36,23 @@ def create_pdf_agent(
         需要在环境变量中设置 OPENAI_API_KEY
     """
     # 1. 创建 LLM（自动从环境变量读取 OPENAI_API_KEY）
-    llm = ChatOpenAI(
+    if model_type == "openai":
+        llm = ChatOpenAI(
         model=model,
         temperature=temperature,
         max_retries=3,      # 自动重试 3 次
         timeout=120.0,      # 超时时间 120 秒（处理 PDF 可能需要更长时间）
         request_timeout=120.0,  # 请求超时
     )
-    
+    elif model_type == "google":
+        llm = ChatGoogleGenerativeAI(
+            model=model,
+            temperature=temperature,
+            max_retries=3,      # 自动重试 3 次
+            timeout=120.0,      # 超时时间 120 秒（处理 PDF 可能需要更长时间）
+            request_timeout=120.0,  # 请求超时
+        )
+
     # 2. 创建 Agent
     agent = create_agent(
         model=llm,
@@ -65,7 +76,7 @@ def run_classify_step(
 ) -> Dict[str, Any]:
     """
     运行 Step 0: Classify
-    
+
     Args:
         agent: LangChain Agent 实例
         paper_file_id: Paper PDF 文件 ID
@@ -82,8 +93,8 @@ def run_classify_step(
         {"type": "text", "text": "Analyze the exam type from these pages."},
         {"type": "file", "file_id": paper_file_id, "mime_type": "application/pdf",
             "extras": {"filename": "paper.pdf", "description": "Original exam paper"}},
-        {"type": "file", "file_id": solution_file_id, "mime_type": "application/pdf",
-            "extras": {"filename": "solution.pdf", "description": "Official solutions"}}
+        # {"type": "file", "file_id": solution_file_id, "mime_type": "application/pdf",
+            # "extras": {"filename": "solution.pdf", "description": "Official solutions"}}
     ])
 
 
@@ -95,11 +106,11 @@ def run_classify_step(
                 mime_type="application/pdf",
                 extras={"filename": "paper.pdf", "description": "Original exam paper"},
             ),
-            solution=FileRef(
-                file_id=solution_file_id,
-                mime_type="application/pdf",
-                extras={"filename": "solution.pdf", "description": "Official solutions"},
-            ),
+            # solution=FileRef(
+            #     file_id=solution_file_id,
+            #     mime_type="application/pdf",
+            #     extras={"filename": "solution.pdf", "description": "Official solutions"},
+            # ),
         ),
         context=PDFWorkflowContext(
             step="classify",
@@ -135,7 +146,7 @@ def run_lister_step(
     """
 
     message = HumanMessage(content=[
-        {"type": "text", "text": "List all questions in the paper PDF."},
+        {"type": "text", "text": "List the questions and their index in the paper."},
         {"type": "file", "file_id": paper_file_id, "mime_type": "application/pdf",
             "extras": {"filename": "paper.pdf", "description": "Original exam paper"}},
         # {"type": "file", "file_id": solution_file_id, "mime_type": "application/pdf",
