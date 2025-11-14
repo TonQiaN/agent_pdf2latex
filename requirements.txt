@@ -5,6 +5,7 @@ langchain-anthropic>=1.0.0
 jupyter>=1.0.0
 langchain-google-genai
 pymupdf
+pdfplumber
 Pillow
 google-genai
 openai

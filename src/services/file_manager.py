@@ -6,18 +6,18 @@ Handles file upload, caching, and management for OpenAI API
 import os
 import json
 from typing import Optional
-from openai import AsyncOpenAI
+from openai import OpenAI
 
 
 class FileManager:
     """Manages file operations with OpenAI API and local caching"""
     
-    def __init__(self, openai_client: AsyncOpenAI, cache_file: str = "../data/cache/file_cache_openai.json"):
+    def __init__(self, openai_client: OpenAI, cache_file: str = "../data/cache/file_cache_openai.json"):
         """
         Initialize FileManager
         
         Args:
-            openai_client: AsyncOpenAI client instance
+            openai_client: OpenAI client instance (同步版本)
             cache_file: Path to cache file for storing file IDs
         """
         self.client = openai_client
@@ -52,7 +52,7 @@ class FileManager:
         with open(self.cache_file, "w", encoding="utf-8") as f:
             json.dump(cache, f, indent=2, ensure_ascii=False)
     
-    async def upload_if_needed(self, path: str, cache_key: str, purpose: str = "assistants") -> str:
+    def upload_if_needed(self, path: str, cache_key: str, purpose: str = "assistants") -> str:
         """
         Get the file ID if it has already been uploaded.
         If not, upload the file to OpenAI and return the file ID.
@@ -77,7 +77,7 @@ class FileManager:
             
             # Verify file still exists on OpenAI
             try:
-                await self.client.files.retrieve(file_id)
+                self.client.files.retrieve(file_id)
                 return file_id
             except Exception as e:
                 print(f"⚠️ 缓存的文件已失效，重新上传... (错误: {e})")
@@ -90,7 +90,7 @@ class FileManager:
             raise FileNotFoundError(f"文件不存在: {path}")
         
         with open(path, 'rb') as f:
-            uploaded = await self.client.files.create(
+            uploaded = self.client.files.create(
                 file=f,
                 purpose=purpose
             )
@@ -102,7 +102,7 @@ class FileManager:
         
         return file_id
     
-    async def list_all_uploaded_files(self, verbose: bool = True) -> list:
+    def list_all_uploaded_files(self, verbose: bool = True) -> list:
         """
         列出所有已上传的文件
         
@@ -112,7 +112,7 @@ class FileManager:
         Returns:
             list: List of file objects
         """
-        files = await self.client.files.list()
+        files = self.client.files.list()
         
         if verbose:
             print("\n📁 OpenAI 已上传文件列表:")
@@ -127,7 +127,7 @@ class FileManager:
         
         return files.data
     
-    async def delete_file(self, file_id: str, verbose: bool = True) -> bool:
+    def delete_file(self, file_id: str, verbose: bool = True) -> bool:
         """
         删除指定文件
         
@@ -139,7 +139,7 @@ class FileManager:
             bool: True if successful
         """
         try:
-            await self.client.files.delete(file_id)
+            self.client.files.delete(file_id)
             if verbose:
                 print(f"🗑️ 已删除: {file_id}")
             return True
@@ -148,7 +148,7 @@ class FileManager:
                 print(f"❌ 删除失败: {file_id} (错误: {e})")
             return False
     
-    async def delete_all_files(self, verbose: bool = True) -> int:
+    def delete_all_files(self, verbose: bool = True) -> int:
         """
         删除所有已上传的文件
         
@@ -158,12 +158,12 @@ class FileManager:
         Returns:
             int: Number of files deleted
         """
-        files = await self.client.files.list()
+        files = self.client.files.list()
         deleted_count = 0
         
         for f in files.data:
             try:
-                await self.client.files.delete(f.id)
+                self.client.files.delete(f.id)
                 if verbose:
                     print(f"🗑️ 已删除: {f.id} ({f.filename})")
                 deleted_count += 1
@@ -176,7 +176,7 @@ class FileManager:
         
         return deleted_count
     
-    async def get_file_info(self, file_id: str) -> Optional[dict]:
+    def get_file_info(self, file_id: str) -> Optional[dict]:
         """
         获取文件信息
         
@@ -187,7 +187,7 @@ class FileManager:
             dict: File information or None if not found
         """
         try:
-            file_obj = await self.client.files.retrieve(file_id)
+            file_obj = self.client.files.retrieve(file_id)
             return {
                 "id": file_obj.id,
                 "filename": file_obj.filename,
@@ -214,9 +214,9 @@ def _get_default_manager() -> FileManager:
     """Get or create default FileManager instance"""
     global _default_manager
     if _default_manager is None:
-        from openai import AsyncOpenAI
+        from openai import OpenAI
         import os
-        client = AsyncOpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+        client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
         _default_manager = FileManager(client)
     return _default_manager
 
@@ -231,25 +231,25 @@ def save_cache(cache: dict) -> None:
     _get_default_manager().save_cache(cache)
 
 
-async def upload_if_needed(path: str, cache_key: str, purpose: str = "assistants") -> str:
+def upload_if_needed(path: str, cache_key: str, purpose: str = "assistants") -> str:
     """
     Get the file ID if it has already been uploaded.
     If not, upload the file to OpenAI and return the file ID.
     """
-    return await _get_default_manager().upload_if_needed(path, cache_key, purpose)
+    return _get_default_manager().upload_if_needed(path, cache_key, purpose)
 
 
-async def list_all_uploaded_files(verbose: bool = True) -> list:
+def list_all_uploaded_files(verbose: bool = True) -> list:
     """列出所有已上传的文件"""
-    return await _get_default_manager().list_all_uploaded_files(verbose)
+    return _get_default_manager().list_all_uploaded_files(verbose)
 
 
-async def delete_all_files(verbose: bool = True) -> int:
+def delete_all_files(verbose: bool = True) -> int:
     """删除所有已上传的文件"""
-    return await _get_default_manager().delete_all_files(verbose)
+    return _get_default_manager().delete_all_files(verbose)
 
 
-async def delete_file(file_id: str, verbose: bool = True) -> bool:
+def delete_file(file_id: str, verbose: bool = True) -> bool:
     """删除指定文件"""
-    return await _get_default_manager().delete_file(file_id, verbose)
+    return _get_default_manager().delete_file(file_id, verbose)
 
